@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Paleta corporativa AQUARIUS - azul */
+:root {
+  --aq-blue-50:  #eff6ff;
+  --aq-blue-100: #dbeafe;
+  --aq-blue-500: #3b82f6;
+  --aq-blue-600: #2563eb;
+  --aq-blue-700: #1d4ed8;
+  --aq-blue-800: #1e40af;
+}
+
+html, body {
+  font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f1f5f9;  /* slate-100 */
+}
+
+/* Scrollbar azul sutil */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Selección azul */
+::selection { background: #dbeafe; color: #1e3a8a; }
