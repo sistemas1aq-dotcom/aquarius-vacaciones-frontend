@@ -100,6 +100,27 @@ export class ApiService {
     );
   }
 
+  // ─── Reporte de Vacaciones (modelo corporativo) ─────────────────
+  getVacationReportPreview(year: number): Observable<any> {
+    return this.http.get<any>(
+      `${this.baseUrl}/reports/vacation-report/preview`, { params: { year: year.toString() } }
+    );
+  }
+
+  downloadVacationReportXlsx(year: number): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/reports/vacation-report/xlsx`,
+      { params: { year: year.toString() }, responseType: 'blob' }
+    );
+  }
+
+  downloadVacationReportPdf(year: number): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/reports/vacation-report/pdf`,
+      { params: { year: year.toString() }, responseType: 'blob' }
+    );
+  }
+
   // ─── Reminders ──────────────────────────────────────────────────
   getReminders(page: number = 1, pageSize: number = 100): Observable<PaginatedResponse<Reminder>> {
     return this.http.get<PaginatedResponse<Reminder>>(

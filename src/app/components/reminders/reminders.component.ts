@@ -30,14 +30,14 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
           <div class="text-xs text-amber-600 mt-0.5">con +30 días sin programar</div>
         </div>
         <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
-          <div class="text-xs text-orange-700 font-semibold uppercase">Total días pendientes</div>
+          <div class="text-xs text-orange-700 font-semibold uppercase">Total días pendientes (Año)</div>
           <div class="text-2xl font-bold text-orange-700 mt-1">{{ totalPendingDays() | number:'1.0-0' }}</div>
-          <div class="text-xs text-orange-600 mt-0.5">suma de todos los empleados</div>
+          <div class="text-xs text-orange-600 mt-0.5">suma del año, sin truncas</div>
         </div>
         <div class="bg-red-50 border border-red-200 rounded-lg p-3">
           <div class="text-xs text-red-700 font-semibold uppercase">Promedio por empleado</div>
           <div class="text-2xl font-bold text-red-700 mt-1">{{ avgPendingDays() | number:'1.0-0' }}</div>
-          <div class="text-xs text-red-600 mt-0.5">días pendientes / empleado</div>
+          <div class="text-xs text-red-600 mt-0.5">días del año / empleado</div>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
                 <th class="text-left px-3 py-2 text-amber-700 font-semibold uppercase">Empleado</th>
                 <th class="text-left px-3 py-2 text-amber-700 font-semibold uppercase">Departamento</th>
                 <th class="text-left px-3 py-2 text-amber-700 font-semibold uppercase">Correo</th>
-                <th class="text-right px-3 py-2 text-amber-700 font-semibold uppercase">Días pendientes</th>
+                <th class="text-right px-3 py-2 text-amber-700 font-semibold uppercase">Días pendientes (Año)</th>
               </tr>
             </thead>
             <tbody>
@@ -68,7 +68,7 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
                 <td class="px-3 py-2 text-gray-500">{{ p.Email || '—' }}</td>
                 <td class="px-3 py-2 text-right">
                   <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
-                    {{ p.TotalPending | number:'1.0-0' }} días
+                    {{ (p.PendingByYear || 0) | number:'1.0-0' }} días
                   </span>
                 </td>
               </tr>
@@ -94,7 +94,7 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
               <th class="text-left px-3 py-2 text-gray-400 font-semibold uppercase">Fecha</th>
               <th class="text-left px-3 py-2 text-gray-400 font-semibold uppercase">Empleado</th>
               <th class="text-left px-3 py-2 text-gray-400 font-semibold uppercase">Correo</th>
-              <th class="text-right px-3 py-2 text-gray-400 font-semibold uppercase">Días Pendientes</th>
+              <th class="text-right px-3 py-2 text-gray-400 font-semibold uppercase">Días Pendientes (Año)</th>
               <th class="text-left px-3 py-2 text-gray-400 font-semibold uppercase">Tipo</th>
               <th class="text-left px-3 py-2 text-gray-400 font-semibold uppercase">Estado</th>
             </tr>
@@ -106,13 +106,13 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
               <td class="px-3 py-2 text-gray-500">{{ r.EmailTo }}</td>
               <td class="px-3 py-2 text-right">
                 <span class="px-2 py-0.5 rounded-full text-xs font-bold"
-                  [class.bg-red-100]="(r.TotalPending || 0) >= 30"
-                  [class.text-red-700]="(r.TotalPending || 0) >= 30"
-                  [class.bg-amber-100]="(r.TotalPending || 0) > 0 && (r.TotalPending || 0) < 30"
-                  [class.text-amber-700]="(r.TotalPending || 0) > 0 && (r.TotalPending || 0) < 30"
-                  [class.bg-gray-100]="(r.TotalPending || 0) === 0"
-                  [class.text-gray-500]="(r.TotalPending || 0) === 0">
-                  {{ (r.TotalPending || 0) | number:'1.0-0' }} días
+                  [class.bg-red-100]="(r.PendingByYear || 0) >= 30"
+                  [class.text-red-700]="(r.PendingByYear || 0) >= 30"
+                  [class.bg-amber-100]="(r.PendingByYear || 0) > 0 && (r.PendingByYear || 0) < 30"
+                  [class.text-amber-700]="(r.PendingByYear || 0) > 0 && (r.PendingByYear || 0) < 30"
+                  [class.bg-gray-100]="(r.PendingByYear || 0) === 0"
+                  [class.text-gray-500]="(r.PendingByYear || 0) === 0">
+                  {{ (r.PendingByYear || 0) | number:'1.0-0' }} días
                 </span>
               </td>
               <td class="px-3 py-2">
@@ -163,12 +163,22 @@ export class RemindersComponent implements OnInit {
   }
 
   totalPendingDays(): number {
-    return this.pending30.reduce((sum, p) => sum + (p.TotalPending || 0), 0);
+    return this.pending30.reduce((sum, p) => sum + (p.PendingByYear || 0), 0);
   }
 
   avgPendingDays(): number {
     if (this.pending30.length === 0) return 0;
     return this.totalPendingDays() / this.pending30.length;
+  }
+
+  /** Orden: días pendientes (año) DESC, luego nombre ASC */
+  private sortByPendingDesc<T extends { PendingByYear?: number; EmployeeName?: string }>(arr: T[]): T[] {
+    return arr.slice().sort((a, b) => {
+      const diff = (b.PendingByYear || 0) - (a.PendingByYear || 0);
+      if (diff !== 0) return diff;  // DESC por días
+      return (a.EmployeeName || '').toLocaleLowerCase()
+        .localeCompare((b.EmployeeName || '').toLocaleLowerCase());
+    });
   }
 
   constructor(private api: ApiService) {}
@@ -180,14 +190,14 @@ export class RemindersComponent implements OnInit {
 
   loadReminders() {
     this.api.getReminders().subscribe(res => {
-      this.reminders = res.items;
+      this.reminders = this.sortByPendingDesc(res.items);
       this.currentPage.set(1);
     });
   }
 
   loadPendingEmployees() {
     this.api.getDashboard().subscribe(res => {
-      this.pending30 = res.Pending30 || [];
+      this.pending30 = this.sortByPendingDesc(res.Pending30 || []);
       this.pendingPage.set(1);
     });
   }
