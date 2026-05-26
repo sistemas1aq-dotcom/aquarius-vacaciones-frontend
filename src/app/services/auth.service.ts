@@ -21,6 +21,7 @@ export class AuthService {
   isAuthenticated = computed(() => this.currentUser() !== null);
   isAdmin = computed(() => this.currentUser()?.Role === 'admin');
   isGestor = computed(() => this.currentUser()?.Role === 'gestor');
+  isTrabajador = computed(() => this.currentUser()?.Role === 'trabajador');
 
   // ─── Login / Logout ───────────────────────────────────────────
   login(data: LoginRequest): Observable<TokenResponse> {

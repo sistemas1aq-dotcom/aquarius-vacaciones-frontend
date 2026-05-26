@@ -143,6 +143,17 @@ export interface DepartmentReportRow {
   CompliancePercent: number;
 }
 
+export interface VacationSegment {
+  VacationId: number;
+  StartMonth: number;
+  EndMonth: number;
+  StartDate: string;
+  EndDate: string;
+  Days: number;
+  Label: string | null;
+  Status: string;
+}
+
 export interface ProjectionRow {
   EmployeeId: number;
   EmployeeName: string;
@@ -150,6 +161,7 @@ export interface ProjectionRow {
   Position: string | null;
   TotalPending: number;
   MonthlySchedule: Record<number, number>;
+  Vacations?: VacationSegment[];
 }
 
 // ─── Reminder ────────────────────────────────────────────────────
@@ -164,6 +176,9 @@ export interface Reminder {
   SentAt: string | null;
   Status: string;
   CreatedAt: string;
+  TotalPending?: number;
+  PendingByYear?: number;
+  PendingTruncated?: number;
 }
 
 // ─── Email ───────────────────────────────────────────────────────

@@ -9,7 +9,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-700 via-blue-600 to-blue-800 p-4">
+    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#16589e] via-[#2876b7] to-[#3b93d0] p-4">
       <div class="w-full max-w-md">
         <!-- Logo/Header -->
         <div class="text-center mb-8">
@@ -68,7 +68,7 @@ import { AuthService } from '../../services/auth.service';
             <button
               type="submit"
               [disabled]="loading() || !f.valid"
-              class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-2.5 rounded-lg transition shadow-md"
+              class="w-full bg-gradient-to-r from-[#16589e] to-[#3b93d0] hover:from-[#114777] hover:to-[#2876b7] disabled:from-blue-300 disabled:to-blue-300 text-white font-semibold py-2.5 rounded-lg transition shadow-md"
             >
               <span *ngIf="!loading()">Ingresar</span>
               <span *ngIf="loading()">Iniciando sesión...</span>

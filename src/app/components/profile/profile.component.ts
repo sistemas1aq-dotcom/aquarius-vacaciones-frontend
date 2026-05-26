@@ -54,7 +54,7 @@ import { AuthService } from '../../services/auth.service';
         <div *ngIf="success()" class="bg-green-50 text-green-700 text-sm px-3 py-2 rounded">{{ success() }}</div>
 
         <button type="submit" [disabled]="loading()"
-                class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-5 py-2 rounded font-medium">
+                class="bg-gradient-to-r from-[#16589e] to-[#3b93d0] hover:from-[#114777] hover:to-[#2876b7] disabled:opacity-40 text-white px-5 py-2 rounded font-medium transition">
           {{ loading() ? 'Guardando...' : 'Actualizar contraseña' }}
         </button>
       </form>

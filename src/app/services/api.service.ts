@@ -29,12 +29,14 @@ export class ApiService {
   getEmployees(params?: {
     department?: string;
     search?: string;
+    includeInactive?: boolean;
     page?: number;
     pageSize?: number;
   }): Observable<PaginatedResponse<EmployeeWithBalance>> {
     let httpParams = new HttpParams();
     if (params?.department) httpParams = httpParams.set('department', params.department);
     if (params?.search) httpParams = httpParams.set('search', params.search);
+    if (params?.includeInactive) httpParams = httpParams.set('includeInactive', 'true');
     if (params?.page) httpParams = httpParams.set('page', params.page.toString());
     if (params?.pageSize) httpParams = httpParams.set('pageSize', params.pageSize.toString());
     return this.http.get<PaginatedResponse<EmployeeWithBalance>>(

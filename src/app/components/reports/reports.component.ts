@@ -1,19 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { MonthlyReportRow, DepartmentReportRow, EmployeeWithBalance } from '../../models/interfaces';
+import { PaginationComponent, paginate } from '../shared/pagination.component';
 
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PaginationComponent],
   template: `
     <!-- Monthly Chart -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-5">
       <h4 class="text-base font-bold text-gray-800 mb-5">Vacaciones Gozadas por Mes — 2026</h4>
       <div class="flex items-end gap-1 h-44 mb-2">
         <div *ngFor="let m of monthlyData; let i = index" class="flex-1 flex flex-col items-center gap-1">
-          <span class="text-[10px] text-emerald-600 font-semibold">{{ m.TotalDays || '' }}</span>
+          <span class="text-[10px] text-emerald-600 font-semibold">{{ m.TotalDays ? (m.TotalDays | number:'1.0-0') : '' }}</span>
           <div class="w-full rounded-md transition-all duration-300"
             [class.bg-emerald-500]="m.TotalDays > 0"
             [class.bg-gray-100]="m.TotalDays === 0"
@@ -41,12 +42,12 @@ import { MonthlyReportRow, DepartmentReportRow, EmployeeWithBalance } from '../.
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let d of deptData" class="border-b border-gray-50 hover:bg-gray-50">
+            <tr *ngFor="let d of paginatedDept()" class="border-b border-gray-50 hover:bg-gray-50">
               <td class="px-3 py-2 font-semibold text-gray-800">{{ d.Department }}</td>
               <td class="px-3 py-2 text-gray-600">{{ d.EmployeeCount }}</td>
-              <td class="px-3 py-2 font-bold" [class.text-red-600]="d.TotalPending > 100" [class.text-amber-600]="d.TotalPending <= 100">{{ d.TotalPending }}d</td>
-              <td class="px-3 py-2 text-gray-500">{{ d.AveragePending }}d</td>
-              <td class="px-3 py-2 text-emerald-600">{{ d.TakenDays2026 }}d</td>
+              <td class="px-3 py-2 font-bold" [class.text-red-600]="d.TotalPending > 100" [class.text-amber-600]="d.TotalPending <= 100">{{ d.TotalPending | number:'1.0-0' }}d</td>
+              <td class="px-3 py-2 text-gray-500">{{ d.AveragePending | number:'1.0-0' }}d</td>
+              <td class="px-3 py-2 text-emerald-600">{{ d.TakenDays2026 | number:'1.0-0' }}d</td>
               <td class="px-3 py-2">
                 <div class="flex items-center gap-2">
                   <div class="flex-1 h-1.5 bg-gray-100 rounded-full max-w-[60px]">
@@ -64,6 +65,12 @@ import { MonthlyReportRow, DepartmentReportRow, EmployeeWithBalance } from '../.
           </tbody>
         </table>
       </div>
+
+      <app-pagination
+        [totalItems]="deptData.length"
+        [pageSize]="pageSize"
+        [currentPage]="deptPage()"
+        (pageChange)="deptPage.set($event)" />
     </div>
 
     <!-- Top Pending -->
@@ -82,20 +89,26 @@ import { MonthlyReportRow, DepartmentReportRow, EmployeeWithBalance } from '../.
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let e of topPending" class="border-b border-gray-50 hover:bg-gray-50">
+            <tr *ngFor="let e of paginatedTop()" class="border-b border-gray-50 hover:bg-gray-50">
               <td class="px-3 py-2">
                 <div class="font-semibold text-gray-800">{{ e.FullName }}</div>
                 <div class="text-[10px] text-gray-400">{{ e.Position }}</div>
               </td>
               <td class="px-3 py-2 text-gray-600">{{ e.DepartmentName }}</td>
               <td class="px-3 py-2 text-gray-500">{{ e.HireDate | date:'dd/MM/yyyy' }}</td>
-              <td class="px-3 py-2 text-red-600 font-bold text-sm">{{ e.TotalPending }}d</td>
-              <td class="px-3 py-2 text-amber-600">{{ e.PendingByYear }}d</td>
-              <td class="px-3 py-2 text-violet-600">{{ e.PendingTruncated }}d</td>
+              <td class="px-3 py-2 text-red-600 font-bold text-sm">{{ e.TotalPending | number:'1.0-0' }}d</td>
+              <td class="px-3 py-2 text-amber-600">{{ e.PendingByYear | number:'1.0-0' }}d</td>
+              <td class="px-3 py-2 text-violet-600">{{ e.PendingTruncated | number:'1.0-0' }}d</td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <app-pagination
+        [totalItems]="topPending.length"
+        [pageSize]="pageSize"
+        [currentPage]="topPage()"
+        (pageChange)="topPage.set($event)" />
     </div>
   `,
 })
@@ -106,6 +119,13 @@ export class ReportsComponent implements OnInit {
   maxDays = 1;
   monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   Math = Math;
+
+  // Paginación
+  readonly pageSize = 7;
+  deptPage = signal(1);
+  topPage  = signal(1);
+  paginatedDept(): DepartmentReportRow[] { return paginate(this.deptData, this.deptPage(), this.pageSize); }
+  paginatedTop():  EmployeeWithBalance[] { return paginate(this.topPending, this.topPage(),  this.pageSize); }
 
   constructor(private api: ApiService) {}
 

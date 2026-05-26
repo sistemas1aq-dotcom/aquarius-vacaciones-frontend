@@ -1,4 +1,16 @@
-export type UserRole = 'admin' | 'gestor';
+export type UserRole = 'admin' | 'gestor' | 'trabajador';
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  admin:      'Administrador de Sistema',
+  gestor:     'Gestor de RRHH',
+  trabajador: 'Trabajador',
+};
+
+export const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
+  { value: 'admin',      label: 'Administrador de Sistema' },
+  { value: 'gestor',     label: 'Gestor de RRHH' },
+  { value: 'trabajador', label: 'Trabajador' },
+];
 
 export interface User {
   Id: number;

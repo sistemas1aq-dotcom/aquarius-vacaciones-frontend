@@ -2,14 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Paleta corporativa AQUARIUS - azul */
+/* Paleta corporativa AQUARIUS
+   Brand dark:  #16589e
+   Brand light: #3b93d0 */
 :root {
-  --aq-blue-50:  #eff6ff;
-  --aq-blue-100: #dbeafe;
-  --aq-blue-500: #3b82f6;
-  --aq-blue-600: #2563eb;
-  --aq-blue-700: #1d4ed8;
-  --aq-blue-800: #1e40af;
+  --aq-blue-50:  #eaf3fb;
+  --aq-blue-100: #d1e5f3;
+  --aq-blue-200: #a8cce8;
+  --aq-blue-300: #7eb4dc;
+  --aq-blue-400: #5ba3d4;
+  --aq-blue-500: #3b93d0;  /* BRAND LIGHT */
+  --aq-blue-600: #2876b7;
+  --aq-blue-700: #16589e;  /* BRAND DARK */
+  --aq-blue-800: #114777;
+  --aq-blue-900: #0a3360;
+  --aq-gradient: linear-gradient(135deg, #16589e 0%, #3b93d0 100%);
 }
 
 html, body {
@@ -22,8 +29,13 @@ html, body {
 /* Scrollbar azul sutil */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: #a8cce8; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #3b93d0; }
 
-/* Selección azul */
-::selection { background: #dbeafe; color: #1e3a8a; }
+/* Selección azul corporativa */
+::selection { background: #d1e5f3; color: #16589e; }
+
+/* Utilidad: gradiente corporativo */
+.bg-aq-gradient    { background: var(--aq-gradient); }
+.bg-aq-gradient-b  { background: linear-gradient(to bottom, #16589e 0%, #3b93d0 100%); }
+.bg-aq-gradient-r  { background: linear-gradient(to right,  #16589e 0%, #3b93d0 100%); }
