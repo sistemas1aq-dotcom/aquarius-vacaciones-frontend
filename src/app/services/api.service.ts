@@ -6,6 +6,9 @@ import {
   Vacation, VacationCreate, VacationUpdate, VacationExtend,
   DashboardResponse, MonthlyReportRow, DepartmentReportRow, ProjectionRow,
   Reminder, EmailDraft, Department, PaginatedResponse, ApiMessage,
+  SyncEstado, SyncCorrida,
+  EstadoEnvio, ResultadoEnvioIndividual, ResultadoCorrida,
+  TextosCorreo, GuardarTextosResp, BorradorConvocatoria, VistaPreviaResp,
 } from '../models/interfaces';
 import { environment } from '../../environments/environment';
 
@@ -128,11 +131,68 @@ export class ApiService {
     );
   }
 
-  sendDailyReminders(): Observable<{ message: string; total: number; sent: number }> {
-    return this.http.post<any>(`${this.baseUrl}/reminders/send-daily`, {});
+  sendDailyReminders(): Observable<ResultadoCorrida> {
+    return this.http.post<ResultadoCorrida>(`${this.baseUrl}/reminders/send-daily`, {});
+  }
+
+  /** Estado del interruptor global de envío de correo. */
+  getEstadoEnvio(): Observable<EstadoEnvio> {
+    return this.http.get<EstadoEnvio>(`${this.baseUrl}/reminders/envio`);
+  }
+
+  /** Activa o cancela TODO el envío de correo. Solo administradores. */
+  cambiarEnvio(activo: boolean): Observable<EstadoEnvio> {
+    return this.http.put<EstadoEnvio>(`${this.baseUrl}/reminders/envio`, {},
+      { params: { activo: activo ? 'true' : 'false' } });
+  }
+
+  /** Permite o cancela los envíos EN LOTE: corrida programada y botón masivo. */
+  cambiarEnvioMasivo(activo: boolean): Observable<EstadoEnvio> {
+    return this.http.put<EstadoEnvio>(`${this.baseUrl}/reminders/envio-masivo`, {},
+      { params: { activo: activo ? 'true' : 'false' } });
+  }
+
+  /** Bloques editables de los correos, su estructura y la vista previa. */
+  getTextosCorreo(): Observable<TextosCorreo> {
+    return this.http.get<TextosCorreo>(`${this.baseUrl}/reminders/textos`);
+  }
+
+  /** Monta los correos con el borrador SIN guardar, para la vista previa. */
+  vistaPreviaTextos(borrador: Record<string, string>): Observable<VistaPreviaResp> {
+    return this.http.post<VistaPreviaResp>(
+      `${this.baseUrl}/reminders/textos/vista-previa`, borrador);
+  }
+
+  /** Guarda los bloques que cambiaron. Solo administradores. */
+  guardarTextosCorreo(cambios: Record<string, string>): Observable<GuardarTextosResp> {
+    return this.http.put<GuardarTextosResp>(`${this.baseUrl}/reminders/textos`, cambios);
+  }
+
+  /** Convocatoria ya redactada por el backend desde la plantilla. */
+  getBorradorConvocatoria(employeeId: number): Observable<BorradorConvocatoria> {
+    return this.http.get<BorradorConvocatoria>(
+      `${this.baseUrl}/reminders/borrador-convocatoria/${employeeId}`);
+  }
+
+  /** Envía el recordatorio a UN trabajador. No aplica la ventana de frecuencia. */
+  enviarRecordatorioIndividual(employeeId: number): Observable<ResultadoEnvioIndividual> {
+    return this.http.post<ResultadoEnvioIndividual>(
+      `${this.baseUrl}/reminders/enviar/${employeeId}`, {});
   }
 
   sendEmail(draft: EmailDraft): Observable<ApiMessage> {
     return this.http.post<ApiMessage>(`${this.baseUrl}/reminders/send-email`, draft);
+  }
+
+  // ─── Sincronización con Planillas ───────────────────────────────
+  getSyncEstado(): Observable<SyncEstado> {
+    return this.http.get<SyncEstado>(`${this.baseUrl}/integraciones/planillas/estado`);
+  }
+
+  getSyncCorridas(limite: number = 20): Observable<SyncCorrida[]> {
+    return this.http.get<SyncCorrida[]>(
+      `${this.baseUrl}/integraciones/planillas/corridas`,
+      { params: { limite: limite.toString() } }
+    );
   }
 }

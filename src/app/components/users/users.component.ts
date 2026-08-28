@@ -52,12 +52,12 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
            placeholder="Buscar por nombre, usuario o email..."
            class="flex-1 min-w-[250px] px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
     <select [(ngModel)]="roleFilter" (ngModelChange)="load()"
-            class="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+            class="pl-4 pr-9 py-2 border border-gray-200 rounded-lg text-sm bg-white">
       <option value="">Todos los roles</option>
       <option *ngFor="let r of roleOptions" [value]="r.value">{{ r.label }}</option>
     </select>
     <select [(ngModel)]="activeFilter" (ngModelChange)="load()"
-            class="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+            class="pl-4 pr-9 py-2 border border-gray-200 rounded-lg text-sm bg-white">
       <option value="">Todos los estados</option>
       <option value="true">Activos</option>
       <option value="false">Inactivos</option>
@@ -146,7 +146,7 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
         <div>
           <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Rol</label>
           <select [(ngModel)]="form.Role" name="rl"
-                  class="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                  class="mt-1 w-full pl-3 pr-9 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
             <option *ngFor="let r of roleOptions" [value]="r.value">{{ r.label }}</option>
           </select>
         </div>

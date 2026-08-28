@@ -1,7 +1,7 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
-import { Reminder, DashboardAlert } from '../../models/interfaces';
+import { Reminder, DashboardAlert, EstadoEnvio } from '../../models/interfaces';
 import { PaginationComponent, paginate } from '../shared/pagination.component';
 
 @Component({
@@ -9,16 +9,28 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
   standalone: true,
   imports: [CommonModule, PaginationComponent],
   template: `
+    <!-- Los interruptores viven en Configuraciones: un mismo control en dos
+         pantallas es la vía rápida a que muestren estados distintos. Aquí solo
+         se leen, para saber qué botones tienen sentido. -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-5">
       <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
-          <h4 class="text-base font-bold text-gray-800">Recordatorios Automáticos</h4>
-          <p class="text-xs text-gray-400 mt-1">Empleados con +30d pendientes — recordatorio diario hasta programar vacaciones</p>
+          <h4 class="text-base font-bold text-gray-800">Recordatorios</h4>
+          <p class="text-xs text-gray-400 mt-1">Empleados con +30d pendientes — se avisa cada {{ 15 }} días hasta que programen vacaciones</p>
         </div>
+        <!-- Este botón es la OTRA vía de lote, la misma corrida que el
+             programador. Por eso cuelga del interruptor de lote, no solo del
+             general: si RRHH apagó los envíos masivos, apagados están, los
+             dispare un reloj o una persona. -->
         <button (click)="sendReminders()"
-          class="px-5 py-2.5 text-xs font-semibold rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition"
-          [disabled]="sending">
-          {{ sending ? 'Enviando...' : '📧 Enviar Recordatorios Diarios' }}
+          class="px-5 py-2.5 text-xs font-semibold rounded-lg text-white transition
+                 disabled:opacity-50 disabled:cursor-not-allowed"
+          [class.bg-amber-500]="puedeEnviarLote()"
+          [class.hover:bg-amber-600]="puedeEnviarLote()"
+          [class.bg-gray-400]="!puedeEnviarLote()"
+          [title]="motivoLoteBloqueado() || 'Envía a todos los que tocan hoy'"
+          [disabled]="sending || !puedeEnviarLote()">
+          {{ sending ? 'Enviando...' : '📧 Enviar a todos los pendientes' }}
         </button>
       </div>
 
@@ -41,7 +53,9 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
         </div>
       </div>
 
-      <div *ngIf="lastResult" class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4 text-sm text-emerald-700">
+      <div *ngIf="lastResult" class="rounded-lg p-3 mb-4 text-sm border"
+           [class.bg-emerald-50]="!lastResultError" [class.border-emerald-200]="!lastResultError" [class.text-emerald-700]="!lastResultError"
+           [class.bg-red-50]="lastResultError" [class.border-red-200]="lastResultError" [class.text-red-700]="lastResultError">
         {{ lastResult }}
       </div>
 
@@ -59,6 +73,7 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
                 <th class="text-left px-3 py-2 text-amber-700 font-semibold uppercase">Departamento</th>
                 <th class="text-left px-3 py-2 text-amber-700 font-semibold uppercase">Correo</th>
                 <th class="text-right px-3 py-2 text-amber-700 font-semibold uppercase">Días pendientes (Año)</th>
+                <th class="text-center px-3 py-2 text-amber-700 font-semibold uppercase whitespace-nowrap">Enviar</th>
               </tr>
             </thead>
             <tbody>
@@ -70,6 +85,50 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
                   <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
                     {{ (p.PendingByYear || 0) | number:'1.0-0' }} días
                   </span>
+                </td>
+
+                <!-- Acción por trabajador.
+                     Dos pasos a propósito: el primer clic pide confirmación.
+                     Es un correo a una persona real; un clic de más no debería
+                     bastar para dispararlo. -->
+                <td class="px-3 py-2 text-center whitespace-nowrap">
+                  <ng-container *ngIf="resultado(p.EmployeeId) as res; else botonEnviar">
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold"
+                          [class.bg-emerald-100]="res.ok" [class.text-emerald-700]="res.ok"
+                          [class.bg-red-100]="!res.ok" [class.text-red-700]="!res.ok"
+                          [title]="res.msg">
+                      {{ res.ok ? '✓ Enviado' : '✗ Error' }}
+                    </span>
+                    <button (click)="limpiarResultado(p.EmployeeId)"
+                      class="ml-1 text-gray-400 hover:text-gray-600" title="Volver a intentar">↻</button>
+                  </ng-container>
+
+                  <ng-template #botonEnviar>
+                    <span *ngIf="enviandoA() === p.EmployeeId" class="text-xs text-gray-500">enviando…</span>
+
+                    <ng-container *ngIf="enviandoA() !== p.EmployeeId">
+                      <button *ngIf="confirmandoA() !== p.EmployeeId"
+                        (click)="pedirConfirmacion(p)"
+                        [disabled]="!envio()?.activo || !p.Email"
+                        [title]="tituloBoton(p)"
+                        class="px-2.5 py-1 rounded-md text-xs font-semibold border transition
+                               border-amber-300 text-amber-700 hover:bg-amber-100
+                               disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+                        Enviar
+                      </button>
+
+                      <span *ngIf="confirmandoA() === p.EmployeeId" class="inline-flex items-center gap-1">
+                        <button (click)="enviarIndividual(p)"
+                          class="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500 text-white hover:bg-amber-600">
+                          Confirmar
+                        </button>
+                        <button (click)="confirmandoA.set(null)"
+                          class="px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-700">
+                          Cancelar
+                        </button>
+                      </span>
+                    </ng-container>
+                  </ng-template>
                 </td>
               </tr>
             </tbody>
@@ -122,7 +181,8 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
                 <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
                   [class.bg-emerald-100]="r.Status === 'sent'" [class.text-emerald-700]="r.Status === 'sent'"
                   [class.bg-gray-100]="r.Status === 'pending'" [class.text-gray-600]="r.Status === 'pending'"
-                  [class.bg-red-100]="r.Status === 'failed'" [class.text-red-700]="r.Status === 'failed'">
+                  [class.bg-red-100]="r.Status === 'failed'" [class.text-red-700]="r.Status === 'failed'"
+                  [title]="r.ErrorMessage || ''">
                   {{ r.Status === 'sent' ? 'Enviado' : r.Status === 'pending' ? 'Pendiente' : 'Error' }}
                 </span>
               </td>
@@ -143,10 +203,78 @@ import { PaginationComponent, paginate } from '../shared/pagination.component';
   `,
 })
 export class RemindersComponent implements OnInit {
+  private api = inject(ApiService);
+
   reminders: Reminder[] = [];
   pending30: DashboardAlert[] = [];
   sending = false;
   lastResult = '';
+  lastResultError = false;
+
+  // ─── Interruptores ───────────────────────────────────────────────
+  envio = signal<EstadoEnvio | null>(null);
+
+  /** El botón masivo necesita los DOS permisos: el general y el de lote. */
+  puedeEnviarLote = computed(() => {
+    const e = this.envio();
+    return !!e && e.activo && e.masivo_activo;
+  });
+
+  motivoLoteBloqueado(): string {
+    const e = this.envio();
+    if (!e) return 'Cargando el estado del envío…';
+    if (!e.activo) return 'El envío de correos está INACTIVO (interruptor general)';
+    if (!e.masivo_activo) return 'Los envíos en lote están INACTIVOS — usa el botón «Enviar» de cada fila';
+    return '';
+  }
+
+  // ─── Envío individual ────────────────────────────────────────────
+  confirmandoA = signal<number | null>(null);
+  enviandoA = signal<number | null>(null);
+  private resultados = signal<Record<number, { ok: boolean; msg: string }>>({});
+
+  resultado(employeeId: number): { ok: boolean; msg: string } | null {
+    return this.resultados()[employeeId] ?? null;
+  }
+
+  limpiarResultado(employeeId: number) {
+    const copia = { ...this.resultados() };
+    delete copia[employeeId];
+    this.resultados.set(copia);
+  }
+
+  tituloBoton(p: DashboardAlert): string {
+    if (!this.envio()?.activo) return 'El envío de correos está INACTIVO';
+    if (!p.Email) return 'El empleado no tiene correo registrado';
+    return `Enviar el recordatorio a ${p.Email}`;
+  }
+
+  pedirConfirmacion(p: DashboardAlert) {
+    this.confirmandoA.set(p.EmployeeId);
+  }
+
+  enviarIndividual(p: DashboardAlert) {
+    this.confirmandoA.set(null);
+    this.enviandoA.set(p.EmployeeId);
+    this.api.enviarRecordatorioIndividual(p.EmployeeId).subscribe({
+      next: (res) => {
+        this.enviandoA.set(null);
+        this.resultados.set({
+          ...this.resultados(),
+          [p.EmployeeId]: { ok: !!res.ok, msg: res.mensaje || res.error || '' },
+        });
+        // El historial cambia siempre: se registra tanto el envío como el fallo.
+        this.loadReminders();
+      },
+      error: (err) => {
+        this.enviandoA.set(null);
+        this.resultados.set({
+          ...this.resultados(),
+          [p.EmployeeId]: { ok: false, msg: err?.error?.detail || 'Error de conexión con el servidor' },
+        });
+      },
+    });
+  }
 
   // Paginación — Historial de envíos
   readonly pageSize = 10;
@@ -181,11 +309,19 @@ export class RemindersComponent implements OnInit {
     });
   }
 
-  constructor(private api: ApiService) {}
-
   ngOnInit() {
+    this.loadEstadoEnvio();
     this.loadReminders();
     this.loadPendingEmployees();
+  }
+
+  loadEstadoEnvio() {
+    this.api.getEstadoEnvio().subscribe({
+      next: (estado) => this.envio.set(estado),
+      // Si no se puede leer, `envio()` queda en null y los botones de envío
+      // salen deshabilitados: ante la duda, no se manda nada.
+      error: () => this.envio.set(null),
+    });
   }
 
   loadReminders() {
@@ -204,15 +340,20 @@ export class RemindersComponent implements OnInit {
 
   sendReminders() {
     this.sending = true;
+    this.lastResult = '';
     this.api.sendDailyReminders().subscribe({
       next: (res) => {
-        this.lastResult = res.message;
+        // El backend devuelve `mensaje`; se deja `message` como respaldo por si
+        // alguna versión antigua del API sigue respondiendo con ese nombre.
+        this.lastResult = res.mensaje || (res as any).message || 'Corrida terminada.';
+        this.lastResultError = !!(res.detalle?.error_conexion || res.detalle?.bloqueado_por);
         this.sending = false;
         this.loadReminders();
         this.loadPendingEmployees();
       },
       error: () => {
         this.lastResult = 'Error al enviar recordatorios';
+        this.lastResultError = true;
         this.sending = false;
       },
     });

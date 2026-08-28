@@ -1,0 +1,33 @@
+# Finales de linea
+#
+# El repositorio guarda LF. En Windows el checkout se convierte a CRLF y en
+# Linux se queda en LF, asi que cada uno ve lo que su sistema espera y el
+# historial no se llena de archivos reescritos enteros por un \r.
+
+* text=auto
+
+# Estos SIEMPRE en LF: los lee Linux, y un \r de mas rompe la construccion
+# o queda dentro de una cabecera.
+*.sh    text eol=lf
+Dockerfile text eol=lf
+*.conf  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+
+# Estos SIEMPRE en CRLF: solo los abre Windows.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Binarios: git no debe tocarlos nunca.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.pdf   binary
+*.xlsx  binary

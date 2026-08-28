@@ -9,6 +9,8 @@ interface NavItem {
   label: string;
   icon: string;
   roles?: UserRole[];   // si no se especifica, todos los autenticados
+  /** Sub-opciones. El padre sigue siendo navegable: lleva a la primera. */
+  children?: NavItem[];
 }
 interface NavSection {
   title: string;
@@ -48,14 +50,30 @@ interface NavSection {
           </div>
           <div *ngIf="!sidebarOpen()" class="my-2 mx-3 border-t border-white/10"></div>
 
-          <a *ngFor="let item of section.items" [routerLink]="item.path"
-             routerLinkActive="!bg-white !text-blue-700 shadow font-semibold"
-             [routerLinkActiveOptions]="{ exact: false }"
-             [title]="item.label"
-             class="mx-2 my-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-blue-50 hover:bg-white/10 transition">
-            <span class="text-base flex-shrink-0">{{ item.icon }}</span>
-            <span *ngIf="sidebarOpen()" class="truncate">{{ item.label }}</span>
-          </a>
+          <ng-container *ngFor="let item of section.items">
+            <a [routerLink]="item.path"
+               routerLinkActive="!bg-white !text-blue-700 shadow font-semibold"
+               [routerLinkActiveOptions]="{ exact: false }"
+               [title]="item.label"
+               class="mx-2 my-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-blue-50 hover:bg-white/10 transition">
+              <span class="text-base flex-shrink-0">{{ item.icon }}</span>
+              <span *ngIf="sidebarOpen()" class="truncate">{{ item.label }}</span>
+            </a>
+
+            <!-- Sub-opciones: solo con la barra abierta. Plegada no hay sitio
+                 para distinguirlas del padre, y dos iconos seguidos sin texto
+                 no dicen nada. -->
+            <ng-container *ngIf="item.children && sidebarOpen()">
+              <a *ngFor="let hijo of item.children" [routerLink]="hijo.path"
+                 routerLinkActive="!bg-white !text-blue-700 shadow font-semibold"
+                 [routerLinkActiveOptions]="{ exact: false }"
+                 [title]="hijo.label"
+                 class="ml-6 mr-2 my-0.5 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-blue-100 hover:bg-white/10 transition">
+                <span class="text-sm flex-shrink-0">{{ hijo.icon }}</span>
+                <span class="truncate">{{ hijo.label }}</span>
+              </a>
+            </ng-container>
+          </ng-container>
         </ng-container>
       </nav>
     </aside>
@@ -148,7 +166,13 @@ export class AppComponent {
       items: [
         { path: '/employees',   label: 'Empleados',     icon: '👥', roles: ['admin', 'gestor'] },
         { path: '/projections', label: 'Proyecciones',  icon: '📈', roles: ['admin', 'gestor'] },
-        { path: '/reports',     label: 'Reportes',      icon: '📋', roles: ['admin', 'gestor'] },
+        {
+          path: '/reports', label: 'Reportes', icon: '📋', roles: ['admin', 'gestor'],
+          children: [
+            { path: '/reports/corporativo', label: 'Reporte Corporativo',  icon: '📊' },
+            { path: '/reports/analiticos',  label: 'Reportes Analíticos', icon: '📈' },
+          ],
+        },
         { path: '/reminders',   label: 'Recordatorios', icon: '📧', roles: ['admin', 'gestor'] },
       ],
     },
@@ -156,6 +180,7 @@ export class AppComponent {
       title: 'Administración',
       items: [
         { path: '/users',   label: 'Usuarios',  icon: '🔑', roles: ['admin'] },
+        { path: '/configuraciones', label: 'Configuraciones', icon: '⚙️', roles: ['admin'] },
         { path: '/profile', label: 'Mi perfil', icon: '👤' },
       ],
     },
@@ -190,8 +215,11 @@ export class AppComponent {
         '/dashboard': 'Dashboard',
         '/employees': 'Empleados',
         '/projections': 'Proyecciones',
+        '/reports/corporativo': 'Reporte Corporativo de Vacaciones',
+        '/reports/analiticos': 'Reportes Analíticos',
         '/reports': 'Reportes',
         '/reminders': 'Recordatorios',
+        '/configuraciones': 'Configuraciones',
         '/users': 'Gestión de Usuarios',
         '/profile': 'Mi Perfil',
       };

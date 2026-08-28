@@ -2,10 +2,12 @@ import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { EmployeesComponent } from './components/employees/employees.component';
 import { ProjectionsComponent } from './components/projections/projections.component';
-import { ReportsComponent } from './components/reports/reports.component';
+import { ReporteCorporativoComponent } from './components/reports/reporte-corporativo.component';
+import { ReportesAnaliticosComponent } from './components/reports/reportes-analiticos.component';
 import { RemindersComponent } from './components/reminders/reminders.component';
 import { LoginComponent } from './components/login/login.component';
 import { UsersComponent } from './components/users/users.component';
+import { ConfiguracionesComponent } from './components/configuraciones/configuraciones.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { authGuard, adminGuard, guestGuard } from './guards/auth.guard';
 
@@ -16,10 +18,16 @@ export const routes: Routes = [
   { path: 'dashboard',   component: DashboardComponent,   canActivate: [authGuard] },
   { path: 'employees',   component: EmployeesComponent,   canActivate: [authGuard] },
   { path: 'projections', component: ProjectionsComponent, canActivate: [authGuard] },
-  { path: 'reports',     component: ReportsComponent,     canActivate: [authGuard] },
+  // Antes «Reportes» era una sola pantalla con cuatro bloques apilados.
+  // Producción los tiene separados en dos, y con razón: uno es el documento
+  // que se imprime y se manda, el otro es para mirar cómo va el año.
+  { path: 'reports', redirectTo: '/reports/corporativo', pathMatch: 'full' },
+  { path: 'reports/corporativo', component: ReporteCorporativoComponent, canActivate: [authGuard] },
+  { path: 'reports/analiticos',  component: ReportesAnaliticosComponent, canActivate: [authGuard] },
   { path: 'reminders',   component: RemindersComponent,   canActivate: [authGuard] },
   { path: 'profile',     component: ProfileComponent,     canActivate: [authGuard] },
   { path: 'users',       component: UsersComponent,       canActivate: [authGuard, adminGuard] },
+  { path: 'configuraciones', component: ConfiguracionesComponent, canActivate: [authGuard, adminGuard] },
 
   { path: '**', redirectTo: '/dashboard' },
 ];
